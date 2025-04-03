@@ -1,15 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 #include "uart.h"
 
 #define BAUD_RATE 115200
 
-
-
 int num_hash[10] = {5, 12, 7, 6, 4, 11, 6, 3, 10, 23};
-int a,b;
 
 extern int hash_asm;
 extern int mod_asm;
@@ -20,11 +16,6 @@ extern int hash_value(char *str);
 extern int hash_mod(int value);
 extern int hash_fibonacci(int n);
 extern void bonus_xor(char *str);
-
-void init_a_b(){
-		a = 1;
-		b = 2;
-}
 
 int hash_value2(char *str) {
 	int hash=strlen(str);
@@ -68,10 +59,10 @@ int xor_checksum2(const char *str) {
     while (*str != '\0') {
         result ^= *str;
         str++;
-    }
+    };
 
     return result;
-}
+};
 
 
 void uart_read_string(char *buffer, int max_length) {
@@ -81,17 +72,13 @@ void uart_read_string(char *buffer, int max_length) {
     while (i < max_length - 1) {
         c = uart_rx();
 				uart_tx(c);
-                    
-
         if (c == '\n' || c == '\r') {
             break;             
-        }
-
+        };
         buffer[i++] = c;
-    }
-
+    };
     buffer[i] = '\0';       
-}
+};
 
 
 int main() {
@@ -142,4 +129,4 @@ int main() {
 		};
 
 	return 0;
-}
+};

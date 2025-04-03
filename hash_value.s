@@ -1,82 +1,63 @@
-	.global hash_value
-	.p2align 2
-	.type hash_value,%function
-	.extern num_hash
-hash_value:
-		.fnstart
-		push    {r4-r8, lr}    
+.global hash_value
+.p2align 2
+.type hash_value,%function
+.extern strlen
 
-		// r0 = str
-		mov r4, r0 					
-		// r0 = str, r1 = str
-		bl strlen					
-		// r0 = strlen(str), r1 = str
-		mov r1, r4
-		mov r2, r0 //length for hash value					
-		// r0 = strlen(str), r1 = str, r2 = strlen(str)
-		mov r3, #0 //i value
-		// r0 = strlen(str), r1 = str, r2 = strlen(str), r3 = 0
-		b loop_start
-loop_end:
-		ldr r1, =hash_asm
-		str r0, [r1]
-		pop     {r4-r8, lr}
-		bx      lr
-		
-		.fnend
-
-loop_start:
-		cmp r3, r2
-		bge loop_end
-		
-		ldrb r4, [r1, r3] // r4 = str[i] (r1 = str, r3 = i)
-		cmp r4, #'A'
-		blt check_number //if r4 < 'A' check for number
-		cmp r4, #'Z'
-		bgt check_lowercase //if r4 > 'Z' check lowercase
-		b case_capital
-
-loop_continue:		
-		add r3, r3, #1
-		b loop_start
-
-check_number:
-		cmp r4, #'0'
-		blt loop_continue
-		cmp r4, #'9'
-		bgt loop_continue
-		b case_number
-		
-check_lowercase:
-		cmp r4, #'a'
-		blt loop_continue
-		cmp r4, #'z'
-		bgt loop_continue
-		b case_lowercase
-
-case_capital:
-		lsl r5, r4, #1 //r5=2*r4
-		add r0, r0, r5 //add it to the hash
-		b loop_continue
-
-case_number:
-		sub r6, r4, #'0' // Subtract ascii 0 from ascii number ('0'=48, '9'=57) 
-		ldr r7, =num_hash // load array address from memory
-		ldr r6, [r7, r6, LSL#2] // get content of array at address r7, at index r6 in increments of 4 bytes "LSL#2" 
-		add r0, r0, r6
-		b loop_continue
-case_lowercase:
-		sub r8, r4, #'a'
-		mul r8, r8, r8
-		add r0, r0, r8
-		b loop_continue
-
-		.data
-		.global hash_asm
+.data
+.global hash_asm
 hash_asm:
 	.word 0
-	
+DIGIT_TABLE:
+    .word 5, 12, 7, 6, 4, 11, 6, 3, 10, 23  // The given values for digits 0-9
 
+.text
+hash_value:
+		.fnstart	
+		push    {r4-r5, lr}    
+	
+		mov r4, r0 					// Save input string to r4 so we can call strlen
+		bl strlen 					// Get string length in r0
+		mov r1, r0					// Save sring length in r1
+		mov r2, #0					// Initialize r2 as i = 0
+		ldr r3, =DIGIT_TABLE		// Load DIGIT_TABLE address from memory
+loop_start:
+		cmp r2,r1					// if r2=i >= r1=strlen
+		bge function_end			// Go to function_end
+		ldrb r5, [r4, r2] 			// Load a byte from input string array r5=str[i]
+		add r2, r2, #1				// Increment i (r2++)
+		cmp r5, #'A'				// if r5=str[i] < 'A'
+		blt case_number				// Go to check number
+		cmp r5, #'Z'				// if r5=str[i] > 'Z'
+		bgt case_lowercase			// Go to check lowercase
+case_capital:
+		lsl r5, r5, #1				// r5=str[i] -> r5=r5*2
+		add r0, r0, r5				// Add the result of str[i]^2 to the hash result (r0)
+		b loop_start
+case_number:
+		cmp r5, #'0'				// if r5=str[i] < '0'
+		blt loop_start				// Go to loop start (No acceptable ASCII less than 0)
+		cmp r5, #'9'				// if r5=str[i] > '9'
+		bgt loop_start				// Go to loop start  (No accpetable ACCI more than 9 & less than A)
+		sub r5, r5, #'0'			// Get int value of str[i] if its a number (ASCII[int] - ASCII[0]) 
+		ldr r5, [r3, r5, LSL#2]		// Get DIGIT_TABLE[r5=(int)str[i]] 
+		add r0, r0, r5				// Add the new hash value to the result
+		b loop_start
+case_lowercase:
+		cmp r5, #'a'				// if r5=str[i] < 'a'
+		blt loop_start				// Go to loop start (No acceptable ASCII more than Z & less than a)
+		cmp r5, #'z'				// if r5=str[i] > 'z'
+		bgt loop_start				// Go to loop start (No acceptable ASCII more than z)
+		sub r5, r5, #'a'			// Get int value of str[i]
+		mul r5, r5, r5				// Square it  -> str[i]^2
+		add r0, r0, r5				// Add it to the result
+		b loop_start
+		
+function_end:
+		ldr r1, =hash_asm  
+		str r0, [r1]
+		pop     {r4-r5, lr}
+		bx      lr
+	.fnend
 
 
 		
